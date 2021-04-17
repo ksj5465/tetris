@@ -73,6 +73,14 @@ bool init_ui(void)
     keypad(stdscr, TRUE);
     keypad(win_game, TRUE);
     keypad(win_quit, TRUE);
+    
+    /* install libncurses5-dev, NCURSE setting - color mode start
+    init_pair(int index, int front_color, int blink_color) */
+    start_color();
+    init_pair(1, COLOR_RED, COLOR_BLUE);
+    init_pair(2, COLOR_WHITE, COLOR_BLACK);
+    init_pair(3, COLOR_YELLOW, COLOR_BLACK);
+    
     return true;
 }
 
@@ -96,12 +104,18 @@ void deinit_ui(void)
 void init_game_screen(void)
 {
     werase(win_main);
+    
+    /* start wattron */
+    wattron (win_main, COLOR_PAIR(3) | A_BOLD);
 
     mvwaddstr(win_main, 3, 47, "Next Block");
     mvwaddstr(win_main, 14, 47, "Level        :  ");
     mvwaddstr(win_main, 16, 47, "rows cleared :  ");
     mvwaddstr(win_main, 17, 47, "total rows   :  ");
     mvwaddstr(win_main, 18, 47, "Score        :  ");
+    
+    /* end wattroff */
+    wattroff (win_main, COLOR_PAIR(3) | A_BOLD);
 
     /* draw the next block window border */
     mvwaddch(win_main, 4, 46, ACS_ULCORNER);
@@ -200,9 +214,11 @@ bool show_quit_dialog(void)
         "                        "
         "                        "
         "                        ";
-    wattron(win_quit, A_REVERSE | A_BOLD);
+    /* start wattron */
+    wattron (win_quit, COLOR_PAIR(3) | A_REVERSE | A_BOLD);
     mvwaddstr(win_quit, 0, 0, message);
-    wattroff(win_quit, A_REVERSE | A_BOLD);
+    /* end wattron */
+    wattroff (win_quit, COLOR_PAIR(3) | A_REVERSE | A_BOLD);
 
     enum { QUIT, RESUME };
     int choice = RESUME;
@@ -247,6 +263,60 @@ bool show_quit_dialog(void)
 #undef MESSAGE_QUIT
 }
 
+bool show_failed_dialog(void)
+{
+#define MESSAGE_QUIT()                           \
+    do {                                         \
+        mvwhline(win_quit, 3, 8, ACS_HLINE, 8);  \
+        mvwhline(win_quit, 5, 8, ACS_HLINE, 8);  \
+        mvwaddch(win_quit, 3, 7, ACS_ULCORNER);  \
+        mvwaddch(win_quit, 4, 7, ACS_VLINE);     \
+        mvwaddch(win_quit, 5, 7, ACS_LLCORNER);  \
+        mvwaddch(win_quit, 3, 16, ACS_URCORNER); \
+        mvwaddch(win_quit, 4, 16, ACS_VLINE);    \
+        mvwaddch(win_quit, 5, 16, ACS_LRCORNER); \
+        mvwprintw(win_quit, 4, 8, "  QUIT  ");   \
+    } while (0)
+
+    const char *message =
+        "                        "
+        "       GAME  OVER       "
+        "                        "
+        "                        "
+        "                        "
+        "                        "
+        "                        ";
+    /* start wattron */
+    wattron (win_quit, COLOR_PAIR(3) | A_REVERSE | A_BOLD);
+    mvwaddstr(win_quit, 0, 0, message);
+    /* end wattron */
+    wattroff (win_quit, COLOR_PAIR(3) | A_REVERSE | A_BOLD);
+
+    enum { QUIT };
+    bool need_refresh = true;
+    /* the loop will accept only ENTER or SPACE */
+    for (int input = 0; input != '\n' && input != ' ';) {
+        if (need_refresh) {
+            MESSAGE_QUIT();
+            wattron(win_quit, A_REVERSE | A_BOLD);
+            wattroff(win_quit, A_REVERSE | A_BOLD);
+            wrefresh(win_quit);
+        }
+
+        need_refresh = true;
+        input = wgetch(win_quit);
+        switch (input) {
+        default:
+            need_refresh = false;
+            break;
+        }
+    }
+
+    werase(win_quit);
+    return false;
+#undef MESSAGE_QUIT
+}
+
 void draw_next_block(block_t type, degree_t orientation)
 {
     werase(win_next);
@@ -276,8 +346,10 @@ void draw_game_board(struct block *block)
 
 void draw_score_board(struct game_score *score)
 {
+    wattron (win_score, COLOR_PAIR(3) | A_BOLD);
     mvwprintw(win_score, 0, 0, "%-8d\n%-8d%-8d%-8d", score->level,
               score->rows_cleared, score->total_rows, score->score);
+    wattroff (win_score, COLOR_PAIR(3) | A_BOLD);
     wrefresh(win_score);
 }
 
@@ -287,9 +359,11 @@ void draw_level_info(int level)
         "                        "
         "     L E V E L   %02d     "
         "                        ";
-    wattron(win_game, A_REVERSE | A_BOLD);
+    /* start wattron */
+    wattron (win_game, COLOR_PAIR(3) | A_REVERSE | A_BOLD);
     mvwprintw(win_game, 7, 0, message, level);
-    wattroff(win_game, A_REVERSE | A_BOLD);
+    /* end wattron */
+    wattroff (win_game, COLOR_PAIR(3) | A_REVERSE | A_BOLD);
 
     wrefresh(win_game);
     wtimeout(win_game, 1500); /* timeout of 1.5 secs for the getch() below */

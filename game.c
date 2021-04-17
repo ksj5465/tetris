@@ -367,6 +367,7 @@ static void *worker_thread(void *arg)
             if (!move_block(data->current, ACTION_PLACE_NEW)) {
                 data->game_over = true;
                 pthread_mutex_unlock(&data->lock);
+                show_failed_dialog(); /* show dialog box */
                 break;
             }
 

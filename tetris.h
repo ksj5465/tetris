@@ -71,6 +71,7 @@ void deinit_ui(void);
 void init_game_screen(void);
 
 bool show_quit_dialog(void);
+bool show_failed_dialog(void);
 void draw_next_block(block_t type, degree_t orientation);
 void draw_game_board(struct block *current);
 void draw_score_board(struct game_score *score);
